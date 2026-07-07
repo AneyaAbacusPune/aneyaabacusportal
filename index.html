@@ -3,56 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aneya Abacus | Student Portal</title>
+    <title>Aneya Abacus Katraj | Secure Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; color: #333; text-align: center; padding: 20px; }
-        .card { background: white; max-width: 400px; margin: 20px auto; padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        h1 { color: #f36621; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 18px; text-align: center; }
-        button { background: #f36621; color: white; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
-        button:hover { background: #d35400; }
+        body { background-color: #165430; font-family: 'Arial', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #333; user-select: none; -webkit-user-select: none; }
+        .card { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; width: 90%; max-width: 400px; }
+        #examSection { display: none; background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 95%; max-width: 1000px; overflow: hidden; transition: filter 0.3s; }
+        #instructionSection, #resultSection { display: none; width: 90%; max-width: 500px; }
+        #dashboardSection { display: none; width: 95%; max-width: 800px; background-color: #fff; padding: 30px; border-radius: 12px; }
         
-        /* The Vertical Math Display */
-        .math-problem { font-size: 32px; font-weight: bold; letter-spacing: 2px; line-height: 1.5; margin: 20px 0; display: inline-block; text-align: right; }
-        .math-line { border-bottom: 4px solid #333; margin-bottom: 10px; width: 100%; }
+        #countdownOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #165430; color: #f36621; font-size: 150px; font-weight: bold; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; }
+
+        #camera-container { display: none; position: fixed; bottom: 20px; right: 20px; width: 130px; height: 130px; border-radius: 50%; overflow: hidden; border: 4px solid #f36621; box-shadow: 0 8px 20px rgba(0,0,0,0.4); z-index: 1500; background-color: #000; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .recording-dot { position: absolute; top: 10px; right: 45px; width: 12px; height: 12px; background-color: red; border-radius: 50%; animation: pulse 1.5s infinite; z-index: 1501; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .rec-text { position: absolute; top: 8px; right: 15px; color: white; font-size: 10px; font-weight: bold; z-index: 1501; }
+
+        .exam-layout { display: flex; flex-direction: row; }
+        .left-panel { flex: 2; padding: 30px; }
+        .right-panel { flex: 1; background-color: #f8f9fa; border-left: 2px solid #e0e0e0; padding: 30px; display: flex; flex-direction: column; }
+        h2 { color: #165430; margin-bottom: 5px; }
+        h3 { margin-top: 0; color: #165430; border-bottom: 2px solid #165430; padding-bottom: 10px; }
+        ul.instructions-list { color: #555; line-height: 1.6; font-size: 14px; margin-bottom: 20px; text-align: left; }
         
-        .hidden { display: none; }
-        .streak-badge { background: #ffd700; color: #000; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 20px; box-sizing: border-box; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 18px; text-align: center; }
+        button { border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; }
+        button:disabled { background-color: #ccc !important; cursor: not-allowed; }
+        
+        .header-bar { display: flex; justify-content: space-between; align-items: center; background-color: #165430; color: white; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; }
+        .timer { font-size: 20px; font-weight: bold; color: #f36621; }
+        
+        /* VERTICAL MATH DISPLAY (Integrated) */
+        .math-container { font-size: 36px; font-family: 'Courier New', monospace; font-weight: bold; display: flex; flex-direction: column; align-items: center; width: 100%; margin: 0 auto 30px auto; line-height: 1.5; }
+        .math-aligner { display: flex; flex-direction: column; align-items: flex-end; width: 150px; border-bottom: 4px solid #333; padding-bottom: 10px;}
+        .math-aligner div { text-align: right; width: 100%; letter-spacing: 2px; }
+        
+        /* MCQ Grid Styling */
+        .mcq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; max-width: 300px; margin: 0 auto 25px auto; }
+        .mcq-btn { background: #f8f9fa; border: 2px solid #e0e0e0; padding: 15px; border-radius: 12px; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.2s; color: #333; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .mcq-btn:hover { border-color: #f36621; }
+        .mcq-btn.selected { background: #f36621; color: white; border-color: #f36621; }
+
+        .nav-buttons { display: flex; justify-content: space-between; gap: 10px; width: 100%; max-width: 400px; margin: 0 auto; }
+        .nav-buttons button { flex: 1; padding: 12px 5px; font-size: 14px; background-color: #555; }
+        .nav-buttons .btn-review { background-color: #9b59b6; } 
+
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; flex-grow: 1; align-content: start; }
+        .grid-btn { background-color: #e0e0e0; color: #555; border: 2px solid #ccc; padding: 10px 0; font-size: 14px; border-radius: 6px; cursor: pointer; }
+        .grid-btn.answered { background-color: #165430; color: white; border-color: #165430; }
+        .grid-btn.review { background-color: #9b59b6; color: white; border-color: #9b59b6; }
+        .grid-btn.current { border-color: #f36621; font-weight: bold; box-shadow: 0 0 5px rgba(243,102,33,0.5); }
+        
+        .submit-btn { background-color: #f36621; width: 100%; margin-top: auto; }
+        .score-display { font-size: 48px; font-weight: bold; color: #f36621; margin: 15px 0; }
+        
+        .dashboard-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+        .chart-container { flex: 2; min-width: 300px; border: 1px solid #eee; border-radius: 8px; padding: 15px; background: #fdfdfd; }
+        .history-list { flex: 1; min-width: 250px; max-height: 400px; overflow-y: auto; text-align: left; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+        .history-item { background: #f8f9fa; padding: 12px; border-bottom: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .score-badge { background: #165430; color: white; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 14px;}
+        .cheat-badge { background: #fc0202; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; margin-top: 5px; display: inline-block;}
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #eee; text-align: left; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+
+        @media (max-width: 768px) { .exam-layout { flex-direction: column; } .right-panel { border-left: none; border-top: 2px solid #e0e0e0; padding: 20px; } #camera-container { width: 90px; height: 90px; bottom: 10px; right: 10px; } .dashboard-grid { flex-direction: column; } }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;" oncopy="return false;" onpaste="return false;">
 
-    <div id="loginScreen" class="card">
-        <h1>Aneya Abacus</h1>
-        <p>Enter your mobile number to start</p>
-        <input type="number" id="mobileInput" placeholder="e.g. 9876500001">
-        <button id="loginBtn">LOGIN</button>
-        <p id="loginError" style="color: red; font-weight: bold;"></p>
+    <script>
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) return false; 
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false; 
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false; 
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
+        }
+    </script>
+
+    <div id="camera-container">
+        <div class="recording-dot"></div>
+        <div class="rec-text">REC</div>
+        <video id="webcam" autoplay playsinline muted></video>
     </div>
+    <canvas id="securityCanvas" width="50" height="50" style="display:none;"></canvas>
 
-    <div id="dashboardScreen" class="card hidden">
-        <h2 id="welcomeText">Welcome!</h2>
-        <p>Level: <span id="levelText" style="font-weight:bold;"></span> | <span class="streak-badge">🔥 Streak: <span id="streakText"></span></span></p>
-        <button id="startExamBtn">START TODAY'S EXAM</button>
-    </div>
-
-    <div id="examScreen" class="card hidden">
-        <h3 style="color: #666;">Question <span id="qNumText">1</span></h3>
+    <div id="loginSection" class="card">
+        <h2>Aneya Abacus & Vedic Math Centre<br><span style="font-size: 18px; color: #f36621;">Katraj, Pune</span></h2>
+        <input type="number" id="mobileInput" placeholder="Registered Mobile Number">
         
-        <div class="math-problem">
-            <div id="verticalSums">
-                </div>
-            <div class="math-line"></div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="btnDash" style="background-color: #165430; flex: 1;">Dashboard</button>
+            <button id="btnRev" style="background-color: #f36621; flex: 1;">Daily Exam</button>
         </div>
+        <p id="message" style="color: red; margin-top: 15px; display: none; font-weight:bold;"></p>
+    </div>
 
-        <input type="number" id="answerInput" placeholder="Your Answer">
-        <button id="submitAnswerBtn">SUBMIT ANSWER</button>
-        <p id="feedbackText" style="font-weight: bold; margin-top: 15px;"></p>
+    <div id="instructionSection" class="card">
+        <h2>Welcome, <span id="welcomeName" style="color: #f36621;">Student</span>!</h2>
+        <ul class="instructions-list">
+            <li><b>Duration:</b> You have a strict <b>15-minute</b> time limit.</li>
+            <li><b>Tracking:</b> Use the Question Palette to navigate. Answered questions will turn <b>Green</b>.</li>
+            <li><b style="color:red;">Academic Integrity:</b> Camera access is mandatory. Minimizing the browser or blocking the camera will freeze your exam.</li>
+        </ul>
+        <button id="fetchBtn" style="background-color: #f36621; width: 100%;">Connect Secure Camera & Start</button>
+        <p id="instMsg" style="color: red; margin-top: 15px; display: none;"></p>
+    </div>
+
+    <div id="dashboardSection">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #165430; padding-bottom: 10px;">
+            <h2 style="margin:0;">Progress Dashboard: <span id="dashStudentName" style="color: #f36621;"></span></h2>
+            <button onclick="location.reload()" style="background-color: #333; padding: 8px 15px;">Log Out</button>
+        </div>
+        <div class="dashboard-grid">
+            <div class="chart-container"><canvas id="progressChart"></canvas></div>
+            <div class="history-list" id="historyData"></div>
+        </div>
+    </div>
+
+    <div id="countdownOverlay">3</div>
+    
+    <div id="securityModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: red;">⚠️ Camera Obstructed ⚠️</h3>
+            <p style="color: #333;">Your camera feed is blocked or paused. The exam is frozen until your face is clearly visible.</p>
+        </div>
+    </div>
+
+    <div id="tabModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: red;">⚠️ SECURITY WARNING ⚠️</h3>
+            <p style="color: #333;">Tab switching or minimizing the browser has been detected. This activity is logged.</p>
+            <button onclick="document.getElementById('tabModal').style.display='none'" style="background-color: #165430; width: 100%; margin-top: 15px;">I Understand</button>
+        </div>
+    </div>
+
+    <div id="submitModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: #165430;">Confirm Submission</h3>
+            <div id="submissionStats" class="summary-box"></div>
+            <p style="color: #555; font-size: 14px; line-height: 1.5; margin-bottom: 0;">Are you sure you want to finalize and submit?</p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                <button onclick="document.getElementById('submitModal').style.display='none'" style="background-color: #fff; color: #333; border: 2px solid #ccc; width: 45%;">Cancel</button>
+                <button id="finalSubmitBtn" style="background-color: #f36621; width: 45%;">Yes, Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="examSection">
+        <div class="exam-layout">
+            <div class="left-panel">
+                <div class="header-bar">
+                    <span id="studentNameDisplay">Student</span>
+                    <span class="timer" id="timerDisplay">15:00</span>
+                </div>
+                <h4 id="currentQInfo">Question 1</h4>
+                <div class="math-container"><div class="math-aligner" id="mathDisplay"></div></div>
+                
+                <div id="mcqContainer" class="mcq-grid"></div>
+
+                <div class="nav-buttons">
+                    <button onclick="prevQuestion()">Previous</button>
+                    <button id="btnReview" class="btn-review" onclick="toggleReview()">Mark for Review</button>
+                    <button onclick="nextQuestion()">Next</button>
+                </div>
+            </div>
+            <div class="right-panel">
+                <h3>Question Palette <span id="examLevelDisplay" style="color: #f36621; float: right; font-size: 16px;"></span></h3>
+                <div class="grid-container" id="qGrid"></div>
+                <button class="submit-btn" onclick="showSubmitModal()">Submit Exam</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="resultSection" class="card">
+        <h3 id="resultLevelDisplay" style="color: #f36621; margin-top: 0; margin-bottom: 5px;"></h3>
+        <h2 style="margin-top: 0;">Exam Complete!</h2>
+        <div class="score-display" id="finalScoreDisplay">0 / 30</div>
+        <p style="color: #555; font-weight: bold; margin-bottom: 5px;">Time Taken: <span id="finalTimeDisplay" style="color: #165430;"></span></p>
+        <p style="color: #165430; font-weight: bold; font-size: 14px;">Results synced to cloud securely.</p>
+        <button onclick="location.reload()" style="background-color: #f36621; width: 100%; margin-top: 15px;">Return to Home</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
         // ⚠️ PASTE YOUR API KEYS HERE:
         const firebaseConfig = {
@@ -68,110 +205,286 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Global State Variables
-        let currentStudent = null;
-        let currentQuestionNumber = 1; 
-        let currentCorrectAnswer = null;
+        // Global State
+        let studentData = {}, questions = [], currentIndex = 0, answers = {}, reviewState = {};
+        let timerInterval, securityInterval, examEndTime = 0, examStartTime = 0;
+        let examActive = false, tabSwitches = 0, videoStream = null, progressChartInstance = null;
 
-        // UI Elements
-        const screens = {
-            login: document.getElementById('loginScreen'),
-            dashboard: document.getElementById('dashboardScreen'),
-            exam: document.getElementById('examScreen')
-        };
-
-        function showScreen(screenName) {
-            Object.values(screens).forEach(s => s.classList.add('hidden'));
-            screens[screenName].classList.remove('hidden');
+        // UI Routing
+        function showScreen(id) {
+            ['loginSection', 'instructionSection', 'dashboardSection', 'examSection', 'resultSection'].forEach(s => document.getElementById(s).style.display = 'none');
+            document.getElementById(id).style.display = 'block';
         }
 
-        // --- 1. LOGIN SYSTEM ---
-        document.getElementById('loginBtn').addEventListener('click', async () => {
+        // --- 1. FIREBASE LOGIN ---
+        async function authenticate(intent) {
             const mobile = document.getElementById('mobileInput').value.trim();
-            const errorTxt = document.getElementById('loginError');
+            const msg = document.getElementById('message');
             
-            if(mobile.length < 10) { errorTxt.innerText = "Enter a valid 10-digit number."; return; }
-            
+            if(mobile.length < 10) { msg.style.display="block"; msg.innerText="Enter a valid mobile number."; return; }
+            msg.style.display="block"; msg.style.color="#165430"; msg.innerText="Connecting to database...";
+
             try {
-                // Fetch student straight from Mumbai database
-                const studentDoc = await getDoc(doc(db, "Students", mobile));
-                
-                if (studentDoc.exists()) {
-                    currentStudent = studentDoc.data();
+                const docRef = doc(db, "Students", mobile);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    studentData = docSnap.data();
+                    studentData.mobile = mobile;
                     
-                    // Populate Dashboard
-                    document.getElementById('welcomeText').innerText = `Welcome back, ${currentStudent.name}!`;
-                    document.getElementById('levelText').innerText = currentStudent.level;
-                    document.getElementById('streakText').innerText = currentStudent.currentStreak;
-                    
-                    showScreen('dashboard');
+                    if(intent === 'exam') {
+                        document.getElementById('welcomeName').innerText = studentData.name;
+                        showScreen('instructionSection');
+                    } else {
+                        loadDashboard();
+                    }
                 } else {
-                    errorTxt.innerText = "Student not found. Check number.";
+                    msg.style.color="red"; msg.innerText="Student not found in database.";
                 }
             } catch(e) {
-                errorTxt.innerText = "Network Error. Try again.";
+                msg.style.color="red"; msg.innerText="Network error connecting to cloud.";
                 console.error(e);
             }
-        });
+        }
 
-        // --- 2. LOAD EXAM ---
-        document.getElementById('startExamBtn').addEventListener('click', () => {
-            loadQuestion(currentQuestionNumber);
-            showScreen('exam');
-        });
+        document.getElementById('btnDash').addEventListener('click', () => authenticate('dashboard'));
+        document.getElementById('btnRev').addEventListener('click', () => authenticate('exam'));
 
-        async function loadQuestion(qNum) {
+        // --- 2. FIREBASE DASHBOARD ---
+        async function loadDashboard() {
+            showScreen('dashboardSection');
+            document.getElementById('dashStudentName').innerText = studentData.name;
+            
             try {
-                const level = currentStudent.level;
-                // Grabs the exact question from the student's level folder
-                const qDoc = await getDoc(doc(db, `Questions/Level_${level}/all_questions`, qNum.toString()));
+                const historyRef = collection(db, `Students/${studentData.mobile}/History`);
+                const snap = await getDocs(historyRef);
                 
-                if (qDoc.exists()) {
-                    const qData = qDoc.data();
-                    currentCorrectAnswer = qData.correctAnswer;
-                    document.getElementById('qNumText').innerText = qNum;
+                let historyArray = [];
+                snap.forEach(doc => historyArray.push(doc.data()));
 
-                    // THE VERTICAL MATH DISPLAY LOGIC
-                    // Takes "12, 23, 45", splits it, and stacks it inside divs
-                    const rawString = qData.sumString; 
-                    const numbersArray = rawString.split(','); 
+                if(historyArray.length > 0) {
+                    let html = "";
+                    let labels = [], scores = [];
                     
-                    let htmlStack = "";
-                    numbersArray.forEach(num => {
-                        htmlStack += `<div>${num.trim()}</div>`;
+                    historyArray.forEach((item, index) => {
+                        labels.push("Test " + (index+1));
+                        scores.push(item.score);
+
+                        let cheatTag = item.tabSwitches > 0 ? `<div class="cheat-badge">⚠️ ${item.tabSwitches} Warnings</div>` : "";
+                        html += `<div class="history-item">
+                                    <div><strong>Level ${item.level}</strong><br>
+                                    <span style="font-size:12px; color:#555;">⏱️ ${item.timeTaken}</span> ${cheatTag}</div>
+                                    <div class="score-badge">${item.score} / ${item.total}</div>
+                                 </div>`;
                     });
-                    
-                    document.getElementById('verticalSums').innerHTML = htmlStack;
-                    document.getElementById('answerInput').value = ""; // Clear old answer
-                    document.getElementById('feedbackText').innerText = "";
+                    document.getElementById('historyData').innerHTML = html;
+
+                    const ctx = document.getElementById('progressChart').getContext('2d');
+                    progressChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Score Trend', data: scores, borderColor: '#f36621', backgroundColor: 'rgba(243, 102, 33, 0.2)', borderWidth: 3, fill: true }] }, options: { responsive: true, maintainAspectRatio: false } });
                 } else {
-                    document.getElementById('verticalSums').innerHTML = "<div>End of Test!</div>";
-                    document.getElementById('submitAnswerBtn').style.display = "none";
+                    document.getElementById('historyData').innerHTML = "<p>No past exams found.</p>";
                 }
             } catch(e) {
-                console.error("Error loading question:", e);
+                console.error(e);
+                document.getElementById('historyData').innerHTML = "<p>Error loading history.</p>";
             }
         }
 
-        // --- 3. SUBMIT ANSWER ---
-        document.getElementById('submitAnswerBtn').addEventListener('click', () => {
-            const userAnswer = parseInt(document.getElementById('answerInput').value);
-            const feedback = document.getElementById('feedbackText');
+        // --- 3. FETCH EXAM & CAMERA ---
+        document.getElementById('fetchBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('fetchBtn'), msg = document.getElementById('instMsg');
+            btn.disabled = true; msg.style.display = "block"; msg.innerText = "Securing Camera...";
+            
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                document.getElementById('webcam').srcObject = videoStream; 
+                document.getElementById('camera-container').style.display = "block";
+            } catch (err) {
+                msg.style.color = "red"; msg.innerText = "Camera access denied! Required for exam."; return; 
+            }
 
-            if(userAnswer === currentCorrectAnswer) {
-                feedback.innerText = "✅ CORRECT!";
-                feedback.style.color = "green";
+            msg.style.color = "#165430"; msg.innerText = "Generating Question Bank...";
+            
+            try {
+                const qRef = collection(db, `Questions/Level_${studentData.level}/all_questions`);
+                const snap = await getDocs(qRef);
                 
-                // Wait 1 second, then load the next question automatically
-                setTimeout(() => {
-                    currentQuestionNumber++;
-                    loadQuestion(currentQuestionNumber);
-                }, 1000);
-            } else {
-                feedback.innerText = "❌ Incorrect, try again!";
-                feedback.style.color = "red";
+                let rawQuestions = [];
+                snap.forEach(doc => rawQuestions.push(doc.data()));
+                
+                if(rawQuestions.length > 0) {
+                    // Grab up to 30 random questions
+                    questions = rawQuestions.sort(() => 0.5 - Math.random()).slice(0, 30);
+                    questions = questions.map(q => {
+                        q.options = generateOptions(q.correctAnswer);
+                        return q;
+                    });
+                    
+                    startCountdown();
+                } else {
+                    msg.style.color="red"; msg.innerText="No questions loaded in database for this level!";
+                }
+            } catch(e) {
+                msg.style.color="red"; msg.innerText="Failed to fetch questions from server.";
             }
         });
+
+        // Your Auto-Generate AI Math Function
+        function generateOptions(correctAnswer) {
+            let options = new Set();
+            let correct = Number(correctAnswer);
+            options.add(correct);
+            
+            let possibleOffsets = [1, -1, 5, -5, 10, -10, 2, -2].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < possibleOffsets.length; i++) {
+                if (options.size === 4) break;
+                let fakeAns = correct + possibleOffsets[i];
+                if (correct >= 0 && fakeAns < 0) continue;
+                options.add(fakeAns);
+            }
+            return Array.from(options).sort(() => Math.random() - 0.5);
+        }
+
+        function startCountdown() {
+            showScreen('');
+            const cEl = document.getElementById('countdownOverlay'); cEl.style.display = "flex"; let count = 3; cEl.innerText = count;
+            let interval = setInterval(() => { count--; if(count > 0) cEl.innerText = count; else if(count === 0) cEl.innerText = "GO!"; else { clearInterval(interval); cEl.style.display = "none"; startExam(); } }, 1000);
+        }
+
+        function startExam() {
+            examActive = true; showScreen('examSection');
+            document.getElementById('studentNameDisplay').innerText = studentData.name;
+            document.getElementById('examLevelDisplay').innerText = "Level " + studentData.level;
+            
+            examStartTime = Date.now(); 
+            examEndTime = Date.now() + (15 * 60 * 1000); 
+            
+            buildGrid(); loadQuestion(0);
+            timerInterval = setInterval(updateTimer, 1000);
+            securityInterval = setInterval(checkCameraSecurity, 2000);
+        }
+
+        // --- 4. EXAM UI LOGIC ---
+        window.loadQuestion = (index) => {
+            currentIndex = index; document.getElementById('currentQInfo').innerText = `Question ${index+1} of ${questions.length}`;
+            
+            // Vertical Sum Generation
+            const rawString = questions[index].sumString;
+            let html = ""; 
+            rawString.split(',').forEach(n => html += `<div>${n.trim()}</div>`); 
+            document.getElementById('mathDisplay').innerHTML = html;
+            
+            let mcqHtml = "";
+            let currentAnswer = answers[index];
+            const labels = ['A', 'B', 'C', 'D'];
+            questions[index].options.forEach((opt, idx) => {
+                let isSelected = (currentAnswer !== undefined && currentAnswer == opt) ? "selected" : "";
+                mcqHtml += `<button class="mcq-btn ${isSelected}" onclick="selectOption(${opt})">
+                                <span style="color:#888; font-size:16px; margin-right:8px;">${labels[idx]})</span> ${opt}
+                            </button>`;
+            });
+            document.getElementById('mcqContainer').innerHTML = mcqHtml;
+            document.getElementById('btnReview').innerText = reviewState[index] ? "Unmark" : "Mark for Review";
+            updateGridUI();
+        }
+
+        window.selectOption = (val) => {
+            answers[currentIndex] = val; loadQuestion(currentIndex); 
+            setTimeout(() => { if(currentIndex < questions.length - 1) loadQuestion(currentIndex + 1); else updateGridUI(); }, 400); 
+        }
+
+        function buildGrid() {
+            let html = ""; for(let i=0; i<questions.length; i++) html += `<button class="grid-btn" id="btn-q${i}" onclick="loadQuestion(${i})">${i + 1}</button>`;
+            document.getElementById('qGrid').innerHTML = html;
+        }
+
+        function updateGridUI() {
+            for(let i=0; i<questions.length; i++) {
+                let btn = document.getElementById(`btn-q${i}`); btn.className = "grid-btn";
+                if(answers[i] !== undefined) btn.classList.add('answered');
+                if(reviewState[i]) btn.classList.add('review'); 
+                if(i === currentIndex) btn.classList.add('current');
+            }
+        }
+
+        window.toggleReview = () => { reviewState[currentIndex] = !reviewState[currentIndex]; loadQuestion(currentIndex); }
+        window.prevQuestion = () => { if(currentIndex > 0) loadQuestion(currentIndex - 1); }
+        window.nextQuestion = () => { if(currentIndex < questions.length - 1) loadQuestion(currentIndex + 1); }
+
+        function updateTimer() {
+            let timeLeft = Math.max(0, Math.round((examEndTime - Date.now()) / 1000));
+            if(timeLeft <= 0) { document.getElementById('finalSubmitBtn').click(); return; }
+            let m = Math.floor(timeLeft/60), s = timeLeft%60;
+            document.getElementById('timerDisplay').innerText = `${m}:${s<10?'0'+s:s}`;
+        }
+
+        // --- 5. ANTI CHEAT ---
+        document.addEventListener("visibilitychange", () => {
+            if (examActive && document.visibilityState === 'hidden') {
+                tabSwitches++; document.getElementById('tabModal').style.display = 'flex';
+            }
+        });
+
+        function checkCameraSecurity() {
+            if (!examActive || !videoStream) return;
+            const videoEl = document.getElementById('webcam'), track = videoStream.getVideoTracks()[0], examUI = document.getElementById('examSection');
+            let isBlocked = (!track || track.muted || track.readyState === 'ended' || videoEl.paused);
+            if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA && !isBlocked) {
+                try {
+                    const canvas = document.getElementById('securityCanvas'), ctx = canvas.getContext('2d'); 
+                    ctx.drawImage(videoEl, 0, 0, 50, 50); let frame = ctx.getImageData(0, 0, 50, 50).data;
+                    let totalBright = 0, pixels = [];
+                    for(let i=0; i<frame.length; i+=4) { let brightness = (frame[i] + frame[i+1] + frame[i+2]) / 3; totalBright += brightness; pixels.push(brightness); }
+                    let avgBright = totalBright / 2500, diffSum = 0;
+                    for(let i=0; i<pixels.length; i++) diffSum += Math.abs(pixels[i] - avgBright);
+                    if (avgBright < 15 || (diffSum / 2500) < 12) isBlocked = true; 
+                } catch(e) {}
+            }
+            if (isBlocked) { tabSwitches++; document.getElementById('securityModal').style.display = 'flex'; examUI.style.filter = "blur(30px)"; } 
+            else { document.getElementById('securityModal').style.display = 'none'; examUI.style.filter = "blur(0px)"; }
+        }
+
+        // --- 6. SUBMISSION ---
+        window.showSubmitModal = () => { 
+            let attempted = Object.keys(answers).length;
+            document.getElementById('submissionStats').innerHTML = `
+                <div class="summary-row"><span style="color: #165430; font-weight: bold;">Attempted:</span> <span>${attempted}</span></div>
+                <div class="summary-row" style="margin-bottom: 0;"><span style="color: #555; font-weight: bold;">Skipped:</span> <span>${questions.length - attempted}</span></div>
+            `;
+            document.getElementById('submitModal').style.display = "flex"; 
+        }
+
+        document.getElementById('finalSubmitBtn').addEventListener('click', async () => {
+            examActive = false; if(videoStream) videoStream.getTracks().forEach(t => t.stop()); 
+            clearInterval(timerInterval); clearInterval(securityInterval);
+            document.getElementById('submitModal').style.display = "none"; showScreen('');
+            document.getElementById('countdownOverlay').style.display = "flex"; document.getElementById('countdownOverlay').innerText = "Grading...";
+            
+            let totalSecs = Math.min(900, Math.floor((Date.now() - examStartTime) / 1000));
+            let timeStr = Math.floor(totalSecs / 60) + "m " + (totalSecs % 60) + "s";
+            
+            let score = 0;
+            for(let i=0; i<questions.length; i++) if(answers[i] == questions[i].correctAnswer) score++;
+            
+            try {
+                // Save to Firebase History
+                await addDoc(collection(db, `Students/${studentData.mobile}/History`), {
+                    date: new Date().toLocaleDateString(),
+                    score: score,
+                    total: questions.length,
+                    level: studentData.level,
+                    timeTaken: timeStr,
+                    tabSwitches: tabSwitches
+                });
+            } catch(e) { console.error("Could not save to DB", e); }
+            
+            document.getElementById('countdownOverlay').style.display = "none"; 
+            showScreen('resultSection');
+            document.getElementById('resultLevelDisplay').innerText = "Level " + studentData.level;
+            document.getElementById('finalScoreDisplay').innerText = score + " / " + questions.length;
+            document.getElementById('finalTimeDisplay').innerText = timeStr; 
+        });
+
     </script>
 </body>
 </html>
